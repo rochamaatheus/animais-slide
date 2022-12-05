@@ -6,6 +6,7 @@ export class Slide {
     this.wrapper = document.querySelector(wrapper);
     this.activeClass = activeClass;
     this.dist = { finalPosition: 0, startX: 0, movement: 0 };
+    this.changeEvent = new Event('changeEvent');
   }
 
   onStart(event) {
@@ -99,10 +100,13 @@ export class Slide {
     this.slidesIndexNav(index);
     this.dist.finalPosition = activeSlide.position;
     this.changeActiveClass();
+    this.wrapper.dispatchEvent(this.changeEvent);
   }
 
   changeActiveClass() {
-    this.slideArray.forEach(item => item.element.classList.remove(this.activeClass));
+    this.slideArray.forEach((item) =>
+      item.element.classList.remove(this.activeClass)
+    );
     this.slideArray[this.index.active].element.classList.add(this.activeClass);
   }
 
@@ -121,8 +125,8 @@ export class Slide {
   onResize() {
     setTimeout(() => {
       this.slidesConfig();
-      this.changeSlide(this.index.active)
-    }, 500)
+      this.changeSlide(this.index.active);
+    }, 500);
   }
 
   addResizeEvent() {
@@ -144,13 +148,17 @@ export class Slide {
     this.addSlideEvents();
     this.slidesConfig();
     this.addResizeEvent();
-    this.changeSlide(0)
+    this.changeSlide(0);
     return this;
   }
 }
 
 export class SlideNav extends Slide {
-  addArrow (prev, next) {
+  constructor(slide, wrapper, activeClass) {
+    super(slide, wrapper, activeClass);
+    this.bindControlEvents();
+  }
+  addArrow(prev, next) {
     this.prevElement = document.querySelector(prev);
     this.nextElement = document.querySelector(next);
     this.addArrowEvent();
@@ -159,5 +167,43 @@ export class SlideNav extends Slide {
   addArrowEvent() {
     this.prevElement.addEventListener('click', this.activePrevSlide);
     this.nextElement.addEventListener('click', this.activeNextSlide);
+  }
+
+  createControl() {
+    const control = document.createElement('ul');
+    control.dataset.control = 'slide';
+    this.slideArray.forEach((item, index) => {
+      control.innerHTML += `<li><a href="#slide${index + 1}">${
+        index + 1
+      }</a></li>`;
+    });
+    this.wrapper.appendChild(control);
+    return control;
+  }
+
+  eventControl(item, index) {
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.changeSlide(index);
+    });
+    this.wrapper.addEventListener('changeEvent', this.activeControlItem);
+  }
+
+  activeControlItem() {
+    this.controlArray.forEach(item => item.classList.remove(this.activeClass));
+    this.controlArray[this.index.active].classList.add(this.activeClass);
+  }
+
+  addControl(customControl) {
+    this.control =
+      document.querySelector(customControl) || this.createControl();
+    this.controlArray = [...this.control.children];
+    this.activeControlItem();
+    this.controlArray.forEach(this.eventControl);
+  }
+
+  bindControlEvents() {
+    this.eventControl = this.eventControl.bind(this);
+    this.activeControlItem = this.activeControlItem.bind(this);
   }
 }
